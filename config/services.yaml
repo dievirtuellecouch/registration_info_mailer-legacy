@@ -1,0 +1,12 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    MenAtWork\RegistrationInfoMailerBundle\:
+        resource: '../src/*'
+        exclude:
+            - '../src/ContaoManager/'
+            - '../src/DependencyInjection/'
+            - '../src/RegistrationInfoMailerBundle.php'
+

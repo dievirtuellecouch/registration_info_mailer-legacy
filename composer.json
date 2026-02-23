@@ -1,0 +1,53 @@
+{
+    "name": "dvc/registration_info_mailer",
+    "version": "1.0.0",
+    "description": "Send a customized email if a new user registers, activates an account or changes account status.",
+    "keywords": ["contao", "registration", "registration_info_mailer"],
+    "type": "contao-bundle",
+    "license": "LGPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Andreas Isaak",
+            "email": "isaak@men-at-work.de",
+            "homepage": "http://www.men-at-work.de",
+            "role": "Developer"
+        },
+        {
+            "name": "David Maack",
+            "email": "maack@men-at-work.de",
+            "homepage": "http://www.men-at-work.de",
+            "role": "Developer"
+        },
+        {
+            "name": "Leo Unglaub",
+            "email": "leo@leo-unglaub.net",
+            "homepage": "http://www.leo-unglaub.net",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "email": "contao@men-at-work.de",
+        "issues": "https://github.com/menatwork-ia/registration_info_mailer/issues",
+        "source": "https://github.com/menatwork-ia/registration_info_mailer"
+    },
+    "require": {
+        "php": "^8.2",
+        "contao/core-bundle": "^5.3",
+        "dvc/contao-associategroups": "^1.0",
+        "terminal42/notification_center": "^2.0"
+    },
+    "require-dev": {
+        "contao/manager-plugin": "^2.0"
+    },
+    "conflict": {
+        "contao/manager-plugin": "<2.0 || >=3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "MenAtWork\\RegistrationInfoMailerBundle\\": "src/"
+        }
+    },
+    "extra": {
+        "contao-manager-plugin": "MenAtWork\\RegistrationInfoMailerBundle\\ContaoManager\\Plugin"
+    }
+}
