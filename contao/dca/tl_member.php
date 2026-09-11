@@ -28,7 +28,7 @@ $GLOBALS['TL_DCA']['tl_member']['fields']['rim_send_mail'] = array
     'exclude'   => true,
     'inputType' => 'checkbox',
     'default'   => '1',
-    'sql'       => "char(1) NOT NULL default '1'"
+    'sql'       => "char(1) NOT NULL default ''"
 );
 
 $GLOBALS['TL_DCA']['tl_member']['fields']['rim_activate_mailtemplate'] = array

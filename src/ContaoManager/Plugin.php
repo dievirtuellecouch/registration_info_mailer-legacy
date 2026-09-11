@@ -19,11 +19,11 @@ class Plugin implements BundlePluginInterface, RoutingPluginInterface
     {
         return [
             (new BundleConfig(RegistrationInfoMailerBundle::class))
-                ->setLoadAfter([ContaoCoreBundle::class]),
+                ->setLoadAfter([ContaoCoreBundle::class, \Terminal42\NotificationCenterBundle\Terminal42NotificationCenterBundle::class]),
         ];
     }
 
-    public function getRouteCollection(LoaderResolverInterface $resolver, KernelInterface $kernel)
+    public function getRouteCollection(LoaderResolverInterface $resolver, KernelInterface $kernel): ?\Symfony\Component\Routing\RouteCollection
     {
         return $resolver
             ->resolve(__DIR__.'/../../config/routes.php')

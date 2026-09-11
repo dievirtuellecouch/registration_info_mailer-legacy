@@ -9,6 +9,7 @@ use Contao\CoreBundle\Event\MenuEvent;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\RouterInterface;
+use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
 #[AsEventListener(event: 'contao.backend_menu_build', priority: -255)]
 class BackendMenuListener
@@ -16,6 +17,7 @@ class BackendMenuListener
     public function __construct(
         private readonly RouterInterface $router,
         private readonly RequestStack $requestStack,
+        private readonly AuthorizationCheckerInterface $authorization,
     ) {
     }
 
@@ -23,7 +25,7 @@ class BackendMenuListener
     {
         $tree = $event->getTree();
 
-        if ('mainMenu' !== $tree->getName()) {
+        if ('mainMenu' !== $tree->getName() || !$this->authorization->isGranted('ROLE_ADMIN')) {
             return;
         }
 
@@ -39,7 +41,7 @@ class BackendMenuListener
             ->createItem('email-news')
             ->setUri($this->router->generate(SendMailToMemberGroupsController::ROUTE_LIST_NAME))
             ->setLabel('E-Mail Nachricht')
-            ->setLinkAttribute('title', 'Title')
+            ->setLinkAttribute('title', 'E-Mail an Mitgliedsgruppen senden')
             ->setLinkAttribute('class', 'email-news')
             ->setCurrent(str_contains($currentController, SendMailToMemberGroupsController::class))
         ;

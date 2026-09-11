@@ -6,7 +6,8 @@ namespace MenAtWork\RegistrationInfoMailerBundle\Controller;
 
 use Contao\BackendCustom;
 use Contao\CoreBundle\Csrf\ContaoCsrfTokenManager;
-use Dvc\ContaoAssociateGroupsBundle\Utility\GroupOfMembers;
+use MenAtWork\RegistrationInfoMailerBundle\Utility\GroupOfMembers;
+use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,7 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Terminal42\NotificationCenterBundle\NotificationCenter;
 
-#[IsGranted('ROLE_USER')]
+#[IsGranted('ROLE_ADMIN')]
 class SendMailToMemberGroupsController extends AbstractController
 {
     public const ROUTE_LIST_NAME = 'backend_send_mail_to_customer_list';
@@ -44,15 +45,21 @@ class SendMailToMemberGroupsController extends AbstractController
         methods: ['GET'],
         defaults: ['_scope' => 'backend'],
     )]
-    public function getAction(): Response
+    public function getAction(Request $request): Response
     {
-        return $this->renderBackendPage([
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
+        $results = $request->getSession()->getFlashBag()->get('rim_bulk_mail_result');
+        $result = $results ? $results[array_key_last($results)] : [];
+
+        return $this->renderBackendPage(array_replace([
             'groupNames' => $this->groupOfMembers->getAllExistingGroups(),
             'token' => $this->csrfTokenManager->getDefaultTokenValue(),
+            'sendToken' => $this->csrfTokenManager->getToken('rim_bulk_mail')->getValue(),
             'selectedGroupIds' => [],
             'membersCount' => 0,
             'emailCount' => [],
-        ]);
+        ], $result));
     }
 
     #[Route(
@@ -63,6 +70,11 @@ class SendMailToMemberGroupsController extends AbstractController
     )]
     public function postAction(Request $request): Response
     {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        if (!$this->csrfTokenManager->isTokenValid(new CsrfToken('rim_bulk_mail', (string) $request->request->get('rim_token', '')))) {
+            throw $this->createAccessDeniedException('Invalid mail form token.');
+        }
+
         $selectedGroupIds = array_values(
             array_unique(
                 array_filter(
@@ -87,9 +99,7 @@ class SendMailToMemberGroupsController extends AbstractController
         $this->buildGroupStatistics($selectedGroupIds, $recipientsByGroup, $sentRecipients);
         $sentCount = \count($sentRecipients);
 
-        return $this->renderBackendPage([
-            'groupNames' => $this->groupOfMembers->getAllExistingGroups(),
-            'token' => $this->csrfTokenManager->getDefaultTokenValue(),
+        $request->getSession()->getFlashBag()->add('rim_bulk_mail_result', [
             'selectedGroupIds' => $selectedGroupIds,
             'membersCount' => $sentCount,
             'emailCount' => $this->countId,
@@ -97,6 +107,8 @@ class SendMailToMemberGroupsController extends AbstractController
             'sentCount' => $sentCount,
             'notificationConfigured' => null !== $notificationId,
         ]);
+
+        return $this->redirectToRoute(self::ROUTE_LIST_NAME, [], Response::HTTP_SEE_OTHER);
     }
 
     /**
@@ -108,7 +120,7 @@ class SendMailToMemberGroupsController extends AbstractController
         $template = $backendCustom->getTemplateObject();
         $template->headline = 'E-Mail Nachricht';
         $template->title = 'E-Mail Nachricht';
-        $template->main = $this->renderView('mail_to_member.html.twig', $context);
+        $template->main = $this->renderView('@RegistrationInfoMailer/mail_to_member.html.twig', $context);
 
         return $backendCustom->run();
     }
@@ -216,10 +228,6 @@ class SendMailToMemberGroupsController extends AbstractController
 
         if (false !== $notificationId) {
             return (int) $notificationId;
-        }
-
-        if (\count($notifications) === 1) {
-            return (int) array_key_first($notifications);
         }
 
         return null;

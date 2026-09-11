@@ -1,0 +1,42 @@
+<div id="tl_buttons">
+    <a href="{{ path('contao_backend') }}" class="header_back">Zurück</a>
+</div>
+
+<h2 class="sub_headline">E-Mail an Mitgliedsgruppen</h2>
+
+{% if notificationConfigured is defined %}
+    {% if not notificationConfigured %}
+        <p class="tl_error">Bitte zuerst im Notification Center eine veröffentlichte Benachrichtigung vom Typ „Formularübermittlung“ mit dem Titel „E-Mail an Mitglieder“ einrichten. Als Empfänger dient ##form_email##.</p>
+    {% elseif selectedGroupIds is empty %}
+        <p class="tl_info">Bitte mindestens eine Mitgliedsgruppe auswählen.</p>
+    {% elseif sentCount == 0 %}
+        <p class="tl_info">Es wurde keine E-Mail versendet. Bitte Empfänger und Benachrichtigung prüfen.</p>
+    {% else %}
+        <p class="tl_confirm">{{ sentCount }} E-Mail{% if sentCount != 1 %}s{% endif %} erfolgreich versendet.</p>
+    {% endif %}
+{% endif %}
+
+<form action="{{ path('backend_send_mail_to_customer_send') }}" method="post" class="tl_form">
+    <input type="hidden" name="FORM_SUBMIT" value="rim_bulk_mail">
+    <input type="hidden" name="REQUEST_TOKEN" value="{{ token }}">
+    <input type="hidden" name="rim_token" value="{{ sendToken }}">
+    <div class="tl_formbody_edit">
+        <fieldset class="tl_tbox">
+            <legend>Empfängergruppen</legend>
+            <div class="widget"><p class="tl_help">Alle Mitglieder der ausgewählten Gruppen erhalten die Nachricht. Mitglieder in mehreren Gruppen werden nur einmal angeschrieben.</p></div>
+            {% for id, name in groupNames %}
+                <div class="widget">
+                    <label><input type="checkbox" name="groups[]" value="{{ id }}"{% if id in selectedGroupIds %} checked{% endif %}> {{ name }}</label>
+                    {% if groupRecipientCount[id] is defined %}<p class="tl_help">{{ emailCount[id]|default(0) }} von {{ groupRecipientCount[id] }} Empfängern erreicht.</p>{% endif %}
+                </div>
+            {% else %}
+                <p class="tl_info">Es sind keine Mitgliedsgruppen vorhanden.</p>
+            {% endfor %}
+        </fieldset>
+    </div>
+    <div class="tl_formbody_submit">
+        <div class="tl_submit_container">
+            <button type="submit" class="tl_submit"{% if groupNames is empty %} disabled{% endif %}>E-Mail an ausgewählte Gruppen senden</button>
+        </div>
+    </div>
+</form>

@@ -11,15 +11,19 @@
 
 use Contao\ArrayUtil;
 use Contao\StringUtil;
+use Contao\CoreBundle\DataContainer\PaletteManipulator;
 
 /**
  * Registration module.
  */
-$GLOBALS['TL_DCA']['tl_module']['palettes']['registration'] = str_replace(
-    '{email_legend:hide}',
-    '{rim_legend:hide},rim_active,rim_act_active;{email_legend:hide}',
-    $GLOBALS['TL_DCA']['tl_module']['palettes']['registration']
-);
+foreach (['registration', 'registrationNotificationCenter'] as $palette) {
+    if (isset($GLOBALS['TL_DCA']['tl_module']['palettes'][$palette])) {
+        PaletteManipulator::create()
+            ->addLegend('rim_legend', 'email_legend', PaletteManipulator::POSITION_BEFORE, true)
+            ->addField(['rim_active', 'rim_act_active'], 'rim_legend', PaletteManipulator::POSITION_APPEND)
+            ->applyToPalette($palette, 'tl_module');
+    }
+}
 
 // Register the sub palettes, don't forget the palettes ;).
 $GLOBALS['TL_DCA']['tl_module']['palettes']['__selector__'][] = 'rim_active';
@@ -31,23 +35,19 @@ $GLOBALS['TL_DCA']['tl_module']['subpalettes']['rim_act_active'] = 'rim_act_mail
 /**
  * Data change module.
  */
-$parts = StringUtil::trimsplit(';', $GLOBALS['TL_DCA']['tl_module']['palettes']['personalData']);
-foreach ($parts as $key => $part) {
-    if (stripos($part, '{template_legend') !== false) {
-        ArrayUtil::arrayInsert($parts, $key - 1, array('{rim_legend:hide},rim_change_active'));
-        break;
+foreach (['personalData', 'lostPassword', 'lostPasswordNotificationCenter'] as $palette) {
+    if (!isset($GLOBALS['TL_DCA']['tl_module']['palettes'][$palette])) {
+        continue;
     }
-}
-$GLOBALS['TL_DCA']['tl_module']['palettes']['personalData'] = implode(';', $parts);
-
-$parts = StringUtil::trimsplit(';', $GLOBALS['TL_DCA']['tl_module']['palettes']['lostPassword']);
-foreach ($parts as $key => $part) {
-    if (stripos($part, '{template_legend') !== false) {
-        ArrayUtil::arrayInsert($parts, $key - 1, array('{rim_legend:hide},rim_change_active'));
-        break;
+    $parts = StringUtil::trimsplit(';', $GLOBALS['TL_DCA']['tl_module']['palettes'][$palette]);
+    foreach ($parts as $key => $part) {
+        if (str_contains($part, '{template_legend')) {
+            ArrayUtil::arrayInsert($parts, $key, ['{rim_legend:hide},rim_change_active']);
+            break;
+        }
     }
+    $GLOBALS['TL_DCA']['tl_module']['palettes'][$palette] = implode(';', $parts);
 }
-$GLOBALS['TL_DCA']['tl_module']['palettes']['lostPassword'] = implode(';', $parts);
 
 // Register the sub palettes, don't forget the palettes ;).
 $GLOBALS['TL_DCA']['tl_module']['palettes']['__selector__'][]       = 'rim_change_active';

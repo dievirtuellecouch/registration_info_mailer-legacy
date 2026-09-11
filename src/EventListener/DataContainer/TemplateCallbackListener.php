@@ -59,7 +59,7 @@ class TemplateCallbackListener
     #[AsCallback(table: 'tl_member', target: 'fields.rim_deactivate_mailtemplate.load')]
     public function setDefaultTemplate(mixed $value, ?DataContainer $dataContainer = null): mixed
     {
-        if (null === $dataContainer || '' !== (string) $value) {
+        if (null === $dataContainer || (int) $value > 0) {
             return $value;
         }
 

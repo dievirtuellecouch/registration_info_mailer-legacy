@@ -10,11 +10,11 @@ use Contao\CoreBundle\Framework\Adapter;
 use Contao\CoreBundle\Framework\ContaoFramework;
 use Contao\DataContainer;
 use Doctrine\DBAL\Connection;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Terminal42\NotificationCenterBundle\NotificationCenter;
+use MenAtWork\RegistrationInfoMailerBundle\Mailer\MemberNotificationSender;
+use Symfony\Contracts\Service\ResetInterface;
 
-class MemberSubmitCallbackListener
+class MemberSubmitCallbackListener implements ResetInterface
 {
     private readonly Adapter $configAdapter;
 
@@ -25,8 +25,7 @@ class MemberSubmitCallbackListener
 
     public function __construct(
         private readonly Connection $connection,
-        private readonly NotificationCenter $notificationCenter,
-        private readonly LoggerInterface $logger,
+        private readonly MemberNotificationSender $sender,
         private readonly RequestStack $requestStack,
         ContaoFramework $framework,
     ) {
@@ -89,30 +88,17 @@ class MemberSubmitCallbackListener
             return;
         }
 
-        $tokens = $this->buildTokens($memberData);
-        $language = (string) ($memberData['language'] ?? '');
-
-        try {
-            $this->notificationCenter->sendNotification(
-                $notificationId,
-                $tokens,
-                '' !== $language ? $language : null,
-            );
-
+        if ($this->sender->send($notificationId, $memberData, (string) ($memberData['language'] ?? ''))) {
+            $this->previousMemberState[$memberId] = $memberData;
             if (!$isActive) {
-                $this->connection->update(
-                    'tl_member',
-                    ['rim_send_mail' => ''],
-                    ['id' => $memberId],
-                );
+                $this->connection->update('tl_member', ['rim_send_mail' => ''], ['id' => $memberId]);
             }
-        } catch (\Throwable $exception) {
-            $this->logger->error('RIM: could not send member submit notification.', [
-                'notificationId' => $notificationId,
-                'memberId' => $memberId,
-                'exception' => $exception,
-            ]);
         }
+    }
+
+    public function reset(): void
+    {
+        $this->previousMemberState = [];
     }
 
     /**
@@ -140,24 +126,6 @@ class MemberSubmitCallbackListener
         }
 
         return true;
-    }
-
-    /**
-     * @param array<string, mixed> $memberData
-     *
-     * @return array<string, mixed>
-     */
-    private function buildTokens(array $memberData): array
-    {
-        $tokens = [];
-
-        foreach ($memberData as $key => $value) {
-            if (null !== $value && '' !== (string) $value) {
-                $tokens[$key] = $value;
-            }
-        }
-
-        return $tokens;
     }
 
     private function extractMemberId(mixed $context): int

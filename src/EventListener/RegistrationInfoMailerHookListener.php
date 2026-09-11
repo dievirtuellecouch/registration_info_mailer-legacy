@@ -12,7 +12,8 @@ use Contao\MemberModel;
 use Contao\Module;
 use Doctrine\DBAL\Connection;
 use Psr\Log\LoggerInterface;
-use Terminal42\NotificationCenterBundle\NotificationCenter;
+use MenAtWork\RegistrationInfoMailerBundle\Mailer\MemberNotificationSender;
+use Contao\CoreBundle\Monolog\ContaoContext;
 
 class RegistrationInfoMailerHookListener
 {
@@ -25,7 +26,7 @@ class RegistrationInfoMailerHookListener
 
     public function __construct(
         private readonly Connection $connection,
-        private readonly NotificationCenter $notificationCenter,
+        private readonly MemberNotificationSender $sender,
         private readonly LoggerInterface $logger,
         ContaoFramework $framework,
     ) {
@@ -54,7 +55,9 @@ class RegistrationInfoMailerHookListener
             return;
         }
 
-        $this->sendNotification($notificationId, $this->memberTokens, (string) ($memberData['language'] ?? ''));
+        if (!$this->sendNotification($notificationId, $this->memberTokens, (string) ($memberData['language'] ?? ''))) {
+            return;
+        }
 
         if ($this->isModuleFlagEnabled($module, 'rim_do_syslog')) {
             $this->log(
@@ -100,7 +103,9 @@ class RegistrationInfoMailerHookListener
             return;
         }
 
-        $this->sendNotification($notificationId, $this->memberTokens, (string) ($member->language ?? ''));
+        if (!$this->sendNotification($notificationId, $this->memberTokens, (string) ($member->language ?? ''))) {
+            return;
+        }
 
         if ($this->isModuleFlagEnabled($module, 'rim_act_do_syslog')) {
             $this->log(
@@ -109,22 +114,6 @@ class RegistrationInfoMailerHookListener
                 'GENERAL',
             );
         }
-    }
-
-    #[AsHook('replaceInsertTags')]
-    public function onReplaceInsertTags(string $tag): string|false
-    {
-        $parts = explode('::', $tag);
-
-        if ('rim' !== ($parts[0] ?? null)) {
-            return false;
-        }
-
-        if (empty($parts[1])) {
-            return '';
-        }
-
-        return (string) ($this->memberTokens[$parts[1]] ?? '');
     }
 
     #[AsHook('loadLanguageFile')]
@@ -203,7 +192,9 @@ class RegistrationInfoMailerHookListener
         }
 
         $language = $this->extractLanguage($member);
-        $this->sendNotification($notificationId, $this->memberTokens, $language);
+        if (!$this->sendNotification($notificationId, $this->memberTokens, $language)) {
+            return;
+        }
 
         if ($this->isModuleFlagEnabled($module, 'rim_change_do_syslog')) {
             $this->log(
@@ -214,20 +205,9 @@ class RegistrationInfoMailerHookListener
         }
     }
 
-    private function sendNotification(int $notificationId, array $tokens, string $language = ''): void
+    private function sendNotification(int $notificationId, array $tokens, string $language = ''): bool
     {
-        try {
-            $this->notificationCenter->sendNotification(
-                $notificationId,
-                $tokens,
-                '' !== $language ? $language : null,
-            );
-        } catch (\Throwable $exception) {
-            $this->logger->error('RIM: could not send notification.', [
-                'notificationId' => $notificationId,
-                'exception' => $exception,
-            ]);
-        }
+        return $this->sender->send($notificationId, $tokens, $language);
     }
 
     private function isModuleFlagEnabled(Module $module, string $field): bool
@@ -268,21 +248,15 @@ class RegistrationInfoMailerHookListener
             return false;
         }
 
-        $tokens = [];
-
-        foreach ($memberData as $key => $value) {
-            if (null !== $value && '' !== (string) $value) {
-                $tokens[$key] = $value;
-            }
-        }
-
-        $this->memberTokens = $tokens;
+        $this->memberTokens = $memberData;
 
         return true;
     }
 
     private function log(string $message, string $function, string $level): void
     {
-        $this->controllerAdapter->log($message, $function, $level);
+        $this->logger->log($level === 'ERROR' ? 'error' : 'info', $message, [
+            'contao' => new ContaoContext($function, $level),
+        ]);
     }
 }

@@ -1,8 +1,12 @@
 {
     "name": "dvc/registration_info_mailer",
-    "version": "1.0.0",
+    "version": "5.7.0",
     "description": "Send a customized email if a new user registers, activates an account or changes account status.",
-    "keywords": ["contao", "registration", "registration_info_mailer"],
+    "keywords": [
+        "contao",
+        "registration",
+        "registration_info_mailer"
+    ],
     "type": "contao-bundle",
     "license": "LGPL-3.0-or-later",
     "authors": [
@@ -26,21 +30,22 @@
         }
     ],
     "support": {
-        "email": "contao@men-at-work.de",
-        "issues": "https://github.com/menatwork-ia/registration_info_mailer/issues",
-        "source": "https://github.com/menatwork-ia/registration_info_mailer"
+        "issues": "https://github.com/dievirtuellecouch/registration_info_mailer-legacy/issues",
+        "source": "https://github.com/dievirtuellecouch/registration_info_mailer-legacy"
     },
     "require": {
-        "php": "^8.2",
-        "contao/core-bundle": "^5.3",
-        "dvc/contao-associategroups": "^1.0",
-        "terminal42/notification_center": "^2.0"
+        "php": "^8.3",
+        "contao/core-bundle": "^5.7",
+        "terminal42/notification_center": "^2.7",
+        "doctrine/dbal": "^3.8 || ^4.0"
     },
     "require-dev": {
-        "contao/manager-plugin": "^2.0"
+        "contao/manager-plugin": "^2.0",
+        "phpunit/phpunit": "^11.5"
     },
     "conflict": {
-        "contao/manager-plugin": "<2.0 || >=3.0"
+        "contao/manager-plugin": "<2.0 || >=3.0",
+        "menatwork/registration_info_mailer": "*"
     },
     "autoload": {
         "psr-4": {
@@ -49,5 +54,13 @@
     },
     "extra": {
         "contao-manager-plugin": "MenAtWork\\RegistrationInfoMailerBundle\\ContaoManager\\Plugin"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MenAtWork\\RegistrationInfoMailerBundle\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
     }
 }

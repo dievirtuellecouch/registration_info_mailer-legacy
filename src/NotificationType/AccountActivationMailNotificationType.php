@@ -25,6 +25,7 @@ class AccountActivationMailNotificationType implements NotificationTypeInterface
     public function getTokenDefinitions(): array
     {
         return [
+            $this->factory->create(AnythingTokenDefinition::class, '*', 'Member field (legacy unprefixed token)'),
             $this->factory->create(TextTokenDefinition::class, 'domain', 'member_activation.domain'),
             $this->factory->create(AnythingTokenDefinition::class, 'member_*', 'member_activation.member_*'),
             $this->factory->create(AnythingTokenDefinition::class, 'member_raw_*', 'member_activation.member_raw_*'),

@@ -26,6 +26,7 @@ class AccountChangeMailNotificationType implements NotificationTypeInterface
     public function getTokenDefinitions(): array
     {
         return [
+            $this->factory->create(AnythingTokenDefinition::class, '*', 'Member field (legacy unprefixed token)'),
             $this->factory->create(AnythingTokenDefinition::class, 'member_*', 'member_personal_data.member_*'),
             $this->factory->create(AnythingTokenDefinition::class, 'member_raw_*', 'member_activation.member_raw_*'),
             $this->factory->create(AnythingTokenDefinition::class, 'member_old_*', 'member_personal_data.member_old_*'),
